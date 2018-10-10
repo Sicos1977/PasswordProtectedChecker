@@ -29,6 +29,7 @@ using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
+using PasswordProtectedChecker.Helpers;
 
 namespace PasswordProtectedChecker
 {
@@ -44,8 +45,22 @@ namespace PasswordProtectedChecker
         /// <param name="stream"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        /// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
         public bool IsStreamProtected(Stream stream)
         {
+            if (stream.Length < 100)
+                throw new PPCStreamToShort();
+
+            var buffer = new byte[100];
+
+            using (var binaryReader = new BinaryReader(stream))
+                binaryReader.Read(buffer, 0, 100);
+
+            var fileTypeFileInfo = FileTypeSelector.GetFileTypeFileInfo(buffer);
+
+            if (fileTypeFileInfo == null)
+                throw new PPCInvalidFile();
+
             throw new NotImplementedException();
         }
         #endregion
