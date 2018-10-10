@@ -6,7 +6,7 @@ directly in the file itself so no original programs are needed (e.g. Microsoft O
 
 Example
 ============
-```
+```c#
 var checker = new Checker();
 var result = Checker.IsFileProtected("myfile.doc");
 ```
