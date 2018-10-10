@@ -1,4 +1,31 @@
-﻿using System.IO;
+﻿//
+// Checker.cs
+//
+// Author: Kees van Spelde <sicos2002@hotmail.com>
+//
+// Copyright (c) 2018 Magic-Sessions. (www.magic-sessions.com)
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
+using System;
+using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
@@ -10,12 +37,26 @@ namespace PasswordProtectedChecker
     /// </summary>
     public class Checker
     {
+        #region IsStreamProtected
+        /// <summary>
+        /// Returns <c>true</c> when the given file in the <paramref name="stream"/> is password protected
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        public bool IsStreamProtected(Stream stream)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
         #region IsFileProtected
         /// <summary>
         /// Returns <c>true</c> when the given <paramref name="fileName"/> is password protected
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
         public bool IsFileProtected(string fileName)
         {
             var extension = Path.GetExtension(fileName);
@@ -44,10 +85,7 @@ namespace PasswordProtectedChecker
                     return IsExcellPasswordProtected(fileName);
 
                 case ".ODS":
-                    if (OpenDocumentFormatIsPasswordProtected(fileName))
-                        return true;
-
-                    break;
+                    return OpenDocumentFormatIsPasswordProtected(fileName);
 
                 case ".POT":
                 case ".PPT":
@@ -173,12 +211,12 @@ namespace PasswordProtectedChecker
         #endregion
 
         #region IsPowerPointPasswordProtected
-
         /// <summary>
         /// Returns <c>true</c> when the binary PowerPoint file is password protected
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
         internal static bool IsPowerPointPasswordProtected(string fileName)
         {
             try
