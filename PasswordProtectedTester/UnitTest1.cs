@@ -1,0 +1,88 @@
+﻿using System.IO;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PasswordProtectedChecker;
+
+namespace PasswordProtectedTester
+{
+    [TestClass]
+    public class UnitTest1
+    {
+        [TestMethod]
+        public void DocWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.doc");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void DocxWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.docx");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void OdpWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odp");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void OdsWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ods");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void OdtWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odt");
+            Assert.IsTrue(result);
+        }
+
+        //[TestMethod]
+        //public void PdfWithPassword()
+        //{
+        //    var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
+        //    Assert.IsTrue(result);
+        //}
+
+        [TestMethod]
+        public void PptWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ppt");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void PptxWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pptx");
+            Assert.IsTrue(result);
+        }
+        
+        [TestMethod]
+        public void XlsWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xls");
+            Assert.IsTrue(result);
+        }
+        
+        [TestMethod]
+        public void XlsxWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xlsx");
+            Assert.IsTrue(result);
+        }
+
+        private static string GetCurrentDir()
+        {
+            var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
+            if (directoryInfo != null)
+                return directoryInfo.FullName + Path.DirectorySeparatorChar;
+            throw new DirectoryNotFoundException();
+        }
+    }
+}
