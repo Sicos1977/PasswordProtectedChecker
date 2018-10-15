@@ -119,6 +119,9 @@ namespace PasswordProtectedChecker
 
                 case ".PDF":
                     return IsPdfPasswordProtected(fileName);
+
+                case ".ZIP":
+                    return IsZipPasswordProtected(fileName);
             }
 
             return false;
@@ -336,6 +339,35 @@ namespace PasswordProtectedChecker
                 return true;
             }
             catch (BadPdfFormatException)
+            {
+                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+            }
+        }
+        #endregion
+
+        #region IsPowerPointPasswordProtected
+        /// <summary>
+        /// Returns <c>true</c> when the ZIP file is password protected
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        internal static bool IsZipPasswordProtected(string fileName)
+        {
+            try
+            {
+                using (var zip = new ZipFile(fileName))
+                {
+                    foreach (ZipEntry zipEntry in zip)
+                    {
+                        if (zipEntry.IsCrypted)
+                            return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception)
             {
                 throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
             }

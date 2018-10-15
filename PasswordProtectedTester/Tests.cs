@@ -84,6 +84,13 @@ namespace PasswordProtectedTester
             Assert.IsTrue(result);
         }
 
+        [TestMethod]
+        public void ZipWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.zip");
+            Assert.IsTrue(result);
+        }
+
         private static string GetCurrentDir()
         {
             var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
