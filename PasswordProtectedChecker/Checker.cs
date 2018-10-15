@@ -26,6 +26,7 @@
 
 using System;
 using System.IO;
+using iTextSharp.text.pdf;
 using ICSharpCode.SharpZipLib.Zip;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
@@ -115,6 +116,9 @@ namespace PasswordProtectedChecker
 
                 case ".ODP":
                     return OpenDocumentFormatIsPasswordProtected(fileName);
+
+                case ".PDF":
+                    return IsPdfPasswordProtected(fileName);
             }
 
             return false;
@@ -310,6 +314,31 @@ namespace PasswordProtectedChecker
             }
 
             return false;
+        }
+        #endregion
+
+        #region IsPowerPointPasswordProtected
+        /// <summary>
+        /// Returns <c>true</c> when the PDF file is password protected
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        internal static bool IsPdfPasswordProtected(string fileName)
+        {
+            try
+            {
+                var reader = new PdfReader(fileName);
+                return reader.IsEncrypted();
+            }
+            catch (BadPasswordException)
+            {
+                return true;
+            }
+            catch (BadPdfFormatException)
+            {
+                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+            }
         }
         #endregion
     }

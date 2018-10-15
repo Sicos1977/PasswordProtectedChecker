@@ -5,7 +5,7 @@ using PasswordProtectedChecker;
 namespace PasswordProtectedTester
 {
     [TestClass]
-    public class UnitTest1
+    public class Tests
     {
         [TestMethod]
         public void DocWithPassword()
@@ -42,12 +42,19 @@ namespace PasswordProtectedTester
             Assert.IsTrue(result);
         }
 
-        //[TestMethod]
-        //public void PdfWithPassword()
-        //{
-        //    var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
-        //    Assert.IsTrue(result);
-        //}
+        [TestMethod]
+        public void PdfWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void PdfWithoutPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\NotPasswordProtected.pdf");
+            Assert.IsFalse(result);
+        }
 
         [TestMethod]
         public void PptWithPassword()
