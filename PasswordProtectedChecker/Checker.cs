@@ -89,7 +89,7 @@ namespace PasswordProtectedChecker
                     return IsWordPasswordProtected(fileName);
 
                 case ".ODT":
-                    return OpenDocumentFormatIsPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileName);
 
                 case ".XLS":
                 case ".XLT":
@@ -102,7 +102,7 @@ namespace PasswordProtectedChecker
                     return IsExcellPasswordProtected(fileName);
 
                 case ".ODS":
-                    return OpenDocumentFormatIsPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileName);
 
                 case ".POT":
                 case ".PPT":
@@ -116,7 +116,7 @@ namespace PasswordProtectedChecker
                     return IsPowerPointPasswordProtected(fileName);
 
                 case ".ODP":
-                    return OpenDocumentFormatIsPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileName);
 
                 case ".PDF":
                     return IsPdfPasswordProtected(fileName);
@@ -298,12 +298,12 @@ namespace PasswordProtectedChecker
         }
         #endregion
 
-        #region OpenDocumentFormatIsPasswordProtected
+        #region IsOpenDocumentFormatPasswordProtected
         /// <summary>
         ///     Returns true when the <paramref name="inputFile" /> is password protected
         /// </summary>
         /// <param name="inputFile">The OpenDocument format file</param>
-        private bool OpenDocumentFormatIsPasswordProtected(string inputFile)
+        private bool IsOpenDocumentFormatPasswordProtected(string inputFile)
         {
             var zipFile = new ZipFile(inputFile);
 
@@ -352,7 +352,7 @@ namespace PasswordProtectedChecker
         }
         #endregion
 
-        #region IsPowerPointPasswordProtected
+        #region IsZipPasswordProtected
         /// <summary>
         /// Returns <c>true</c> when the ZIP file is password protected
         /// </summary>
