@@ -98,6 +98,14 @@ namespace PasswordProtectedTester
             Assert.IsTrue(result);
         }
 
+        
+        [TestMethod]
+        public void EmlFileWithDocxWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.eml");
+            Assert.IsTrue(result);
+        }
+
         private static string GetCurrentDir()
         {
             var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
