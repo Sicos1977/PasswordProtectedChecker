@@ -126,6 +126,9 @@ namespace PasswordProtectedChecker
 
                 case ".MSG":
                     return IsMsgPasswordProtected(fileName);
+                
+                case ".EML":
+                    return IsEmlPasswordProtected(fileName);
             }
 
             return false;
@@ -422,20 +425,28 @@ namespace PasswordProtectedChecker
                                 {
                                     var result = false;
 
-                                    if (attachment is Storage.Attachment)
+                                    switch (attachment)
                                     {
-                                        var attach = (Storage.Attachment) attachment;
-                                        if (attach.Data == null) continue;
-                                        var attachmentFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, attach.FileName));
-                                        File.WriteAllBytes(attachmentFileName, attach.Data);
-                                        result = IsFileProtected(attachmentFileName);
-                                    }
-                                    else if (attachment is Storage.Message)
-                                    {
-                                        var msg = (Storage.Message) attachment;
-                                        var attachmentFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, msg.FileName));
-                                        msg.Save(attachmentFileName);
-                                        result = IsMsgPasswordProtected(attachmentFileName);
+                                        case Storage.Attachment attach when attach.Data == null:
+                                            continue;
+                                        case Storage.Attachment attach:
+                                        {
+                                            var attachmentFileName =
+                                                FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName,
+                                                    attach.FileName));
+                                            File.WriteAllBytes(attachmentFileName, attach.Data);
+                                            result = IsFileProtected(attachmentFileName);
+                                            break;
+                                        }
+                                        case Storage.Message msg:
+                                        {
+                                            var attachmentFileName =
+                                                FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName,
+                                                    msg.FileName));
+                                            msg.Save(attachmentFileName);
+                                            result = IsFileProtected(attachmentFileName);
+                                            break;
+                                        }
                                     }
 
                                     if (result) return true;
@@ -451,6 +462,53 @@ namespace PasswordProtectedChecker
                     }
                     
                     return false;
+                }
+            }
+            catch (Exception)
+            {
+                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+            }
+        }
+        #endregion
+
+        #region IsEmlPasswordProtected
+        /// <summary>
+        /// Returns <c>true</c> when one or more attachments in the EML file are password protected
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        private bool IsEmlPasswordProtected(string fileName)
+        {
+            try
+            {
+                using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+                {
+                    var message = MsgReader.Mime.Message.Load(stream);
+                    if (message.Attachments == null) return false;
+                    DirectoryInfo tempDirectory = null;
+
+                    try
+                    {
+                        tempDirectory = FileManager.GetTempDirectory();
+                        foreach (var attachment in message.Attachments)
+                        {
+                            var attachmentFileName =
+                                FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName,
+                                    attachment.FileName));
+                            var fileInfo = new FileInfo(FileManager.FileExistsMakeNew(attachmentFileName));
+                            File.WriteAllBytes(fileInfo.FullName, attachment.Body);
+                            var result = IsFileProtected(attachmentFileName);
+                            if (result) return true;
+                        }
+
+                        return false;
+                    }
+                    finally
+                    {
+                        if (tempDirectory != null && tempDirectory.Exists)
+                            tempDirectory.Delete(true);
+                    }
                 }
             }
             catch (Exception)
