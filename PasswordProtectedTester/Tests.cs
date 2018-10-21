@@ -91,6 +91,13 @@ namespace PasswordProtectedTester
             Assert.IsTrue(result);
         }
 
+        [TestMethod]
+        public void MsgFileWithDocxWithPassword()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
+            Assert.IsTrue(result);
+        }
+
         private static string GetCurrentDir()
         {
             var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;

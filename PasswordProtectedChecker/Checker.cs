@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using iTextSharp.text.pdf;
 using ICSharpCode.SharpZipLib.Zip;
+using MsgReader.Outlook;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
 using PasswordProtectedChecker.Helpers;
@@ -122,6 +123,9 @@ namespace PasswordProtectedChecker
 
                 case ".ZIP":
                     return IsZipPasswordProtected(fileName);
+
+                case ".MSG":
+                    return IsMsgPasswordProtected(fileName);
             }
 
             return false;
@@ -135,7 +139,7 @@ namespace PasswordProtectedChecker
         /// <param name="fileName"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        public static bool IsWordPasswordProtected(string fileName)
+        private bool IsWordPasswordProtected(string fileName)
         {
             try
             {
@@ -185,7 +189,7 @@ namespace PasswordProtectedChecker
         /// <param name="fileName"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        public static bool IsExcellPasswordProtected(string fileName)
+        private bool IsExcellPasswordProtected(string fileName)
         {
             try
             {
@@ -239,7 +243,7 @@ namespace PasswordProtectedChecker
         /// <param name="fileName"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        internal static bool IsPowerPointPasswordProtected(string fileName)
+        private bool IsPowerPointPasswordProtected(string fileName)
         {
             try
             {
@@ -296,7 +300,7 @@ namespace PasswordProtectedChecker
         ///     Returns true when the <paramref name="inputFile" /> is password protected
         /// </summary>
         /// <param name="inputFile">The OpenDocument format file</param>
-        public bool OpenDocumentFormatIsPasswordProtected(string inputFile)
+        private bool OpenDocumentFormatIsPasswordProtected(string inputFile)
         {
             var zipFile = new ZipFile(inputFile);
 
@@ -327,7 +331,7 @@ namespace PasswordProtectedChecker
         /// <param name="fileName"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        internal static bool IsPdfPasswordProtected(string fileName)
+        private bool IsPdfPasswordProtected(string fileName)
         {
             try
             {
@@ -352,7 +356,7 @@ namespace PasswordProtectedChecker
         /// <param name="fileName"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        internal static bool IsZipPasswordProtected(string fileName)
+        private bool IsZipPasswordProtected(string fileName)
         {
             try
             {
@@ -366,6 +370,88 @@ namespace PasswordProtectedChecker
                 }
 
                 return false;
+            }
+            catch (Exception)
+            {
+                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+            }
+        }
+        #endregion
+
+        #region IsMsgPasswordProtected
+        /// <summary>
+        /// Returns <c>true</c> when one or more attachments in the MSG file are password protected
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        private bool IsMsgPasswordProtected(string fileName)
+        {
+            try
+            {
+                using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+                using (var message = new Storage.Message(stream))
+                {
+                    switch (message.Type)
+                    {
+                        case MessageType.Email:
+                        case MessageType.EmailSms:
+                        case MessageType.EmailNonDeliveryReport:
+                        case MessageType.EmailDeliveryReport:
+                        case MessageType.EmailDelayedDeliveryReport:
+                        case MessageType.EmailReadReceipt:
+                        case MessageType.EmailNonReadReceipt:
+                        case MessageType.EmailEncryptedAndMaybeSigned:
+                        case MessageType.EmailEncryptedAndMaybeSignedNonDelivery:
+                        case MessageType.EmailEncryptedAndMaybeSignedDelivery:
+                        case MessageType.EmailClearSignedReadReceipt:
+                        case MessageType.EmailClearSignedNonDelivery:
+                        case MessageType.EmailClearSignedDelivery:
+                        case MessageType.EmailBmaStub:
+                        case MessageType.CiscoUnityVoiceMessage:
+                        case MessageType.EmailClearSigned:
+                        case MessageType.RightFaxAdv:
+                        case MessageType.SkypeForBusinessMissedMessage:
+                        case MessageType.SkypeForBusinessConversation:
+                            DirectoryInfo tempDirectory = null;
+
+                            try
+                            {
+                                tempDirectory = FileManager.GetTempDirectory();
+                                foreach (var attachment in message.Attachments)
+                                {
+                                    var result = false;
+
+                                    if (attachment is Storage.Attachment)
+                                    {
+                                        var attach = (Storage.Attachment) attachment;
+                                        if (attach.Data == null) continue;
+                                        var attachmentFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, attach.FileName));
+                                        File.WriteAllBytes(attachmentFileName, attach.Data);
+                                        result = IsFileProtected(attachmentFileName);
+                                    }
+                                    else if (attachment is Storage.Message)
+                                    {
+                                        var msg = (Storage.Message) attachment;
+                                        var attachmentFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, msg.FileName));
+                                        msg.Save(attachmentFileName);
+                                        result = IsMsgPasswordProtected(attachmentFileName);
+                                    }
+
+                                    if (result) return true;
+                                }
+
+                                return false;
+                            }
+                            finally
+                            {
+                                if (tempDirectory != null && tempDirectory.Exists)
+                                    tempDirectory.Delete(true);
+                            }
+                    }
+                    
+                    return false;
+                }
             }
             catch (Exception)
             {
