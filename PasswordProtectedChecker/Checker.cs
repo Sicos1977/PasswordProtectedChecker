@@ -27,6 +27,7 @@
 using System;
 using System.IO;
 using iTextSharp.text.pdf;
+using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
 using MsgReader.Outlook;
 using OpenMcdf;
@@ -361,14 +362,39 @@ namespace PasswordProtectedChecker
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
         private bool IsZipPasswordProtected(string fileName)
         {
+            DirectoryInfo tempDirectory = null;
+
             try
             {
                 using (var zip = new ZipFile(fileName))
                 {
+                    // First check the zip entries for passwords
                     foreach (ZipEntry zipEntry in zip)
                     {
                         if (zipEntry.IsCrypted)
                             return true;
+                    }
+
+                    // Now check the files in the zip
+                    tempDirectory = FileManager.GetTempDirectory();
+                    foreach (ZipEntry zipEntry in zip)
+                    {
+                        if (zipEntry.IsFile)
+                        {
+                            var buffer = new byte[4096];
+                            var zipEntryFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, zipEntry.Name));
+                            using(var zipStream = zip.GetInputStream(zipEntry))
+                            using (var streamWriter = File.Create(zipEntryFileName))
+                                StreamUtils.Copy(zipStream, streamWriter, buffer);
+
+                            var result = IsFileProtected(zipEntryFileName);
+                            if (result) return true;
+                        }
+                        else if (zipEntry.IsDirectory)
+                        {
+                            var zipDirectory = new DirectoryInfo(Path.Combine(tempDirectory.FullName, zipEntry.Name));
+                            zipDirectory.Create();
+                        }
                     }
                 }
 
@@ -377,6 +403,11 @@ namespace PasswordProtectedChecker
             catch (Exception)
             {
                 throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+            }
+            finally
+            {
+                if (tempDirectory != null && tempDirectory.Exists)
+                    tempDirectory.Delete(true);
             }
         }
         #endregion

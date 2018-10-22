@@ -92,6 +92,13 @@ namespace PasswordProtectedTester
         }
 
         [TestMethod]
+        public void ZipWithPasswordProtectedZipEntry()
+        {
+            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtectedZipEntry.zip");
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
         public void MsgFileWithDocxWithPassword()
         {
             var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
