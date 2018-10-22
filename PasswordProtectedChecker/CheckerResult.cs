@@ -3,7 +3,7 @@
 namespace PasswordProtectedChecker
 {
     /// <summary>
-    /// A placeholder to return the result of a check with a breadcrum trail about the
+    /// A placeholder to return the result of a check with a breadcrumb trail about the
     /// file that has a password when the result is <c>true</c>
     /// </summary>
     public class CheckerResult
