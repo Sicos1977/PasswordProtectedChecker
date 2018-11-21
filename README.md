@@ -27,7 +27,7 @@ The easiest way to install PasswordProtectedChecker is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    Install-Package <There is no package yet>
+    Install-Package PasswordProtectedChecker
 
 
 ## License Information
