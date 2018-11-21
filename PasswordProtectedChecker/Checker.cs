@@ -41,32 +41,64 @@ namespace PasswordProtectedChecker
     /// </summary>
     public class Checker
     {
-        #region IsStreamProtected
+        #region Fields
+        private readonly string _tempPath;
+        #endregion
+
+        #region Properties
         /// <summary>
-        /// Returns <c>true</c> when the given file in the <paramref name="stream"/> is password protected
+        /// Makes a temp directory and returns it as an <see cref="DirectoryInfo"/> object
         /// </summary>
-        /// <param name="stream"></param>
-        /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        /// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
-        public bool IsStreamProtected(Stream stream)
+        private DirectoryInfo TempDirectory
         {
-            if (stream.Length < 100)
-                throw new PPCStreamToShort();
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(_tempPath) && Directory.Exists(_tempPath))
+                    return FileManager.GetTempDirectory(_tempPath);
 
-            var buffer = new byte[100];
-
-            using (var binaryReader = new BinaryReader(stream))
-                binaryReader.Read(buffer, 0, 100);
-
-            var fileTypeFileInfo = FileTypeSelector.GetFileTypeFileInfo(buffer);
-
-            if (fileTypeFileInfo == null)
-                throw new PPCInvalidFile();
-
-            throw new NotImplementedException();
+                return FileManager.GetTempDirectory(null);
+            }
         }
         #endregion
+
+        #region Constructor
+        /// <summary>
+        /// Creates this object and sets it's needed properties
+        /// </summary>
+        /// <param name="tempPath">When set then temporary files will be created at this location instead
+        /// of the default Windows temp folder</param>
+        public Checker(string tempPath = null)
+        {
+            _tempPath = tempPath;
+        }
+        #endregion
+
+        //#region IsStreamProtected
+        ///// <summary>
+        ///// Returns <c>true</c> when the given file in the <paramref name="stream"/> is password protected
+        ///// </summary>
+        ///// <param name="stream"></param>
+        ///// <returns></returns>
+        ///// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        ///// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
+        //public bool IsStreamProtected(Stream stream)
+        //{
+        //    if (stream.Length < 100)
+        //        throw new PPCStreamToShort();
+
+        //    var buffer = new byte[100];
+
+        //    using (var binaryReader = new BinaryReader(stream))
+        //        binaryReader.Read(buffer, 0, 100);
+
+        //    var fileTypeFileInfo = FileTypeSelector.GetFileTypeFileInfo(buffer);
+
+        //    if (fileTypeFileInfo == null)
+        //        throw new PPCInvalidFile();
+
+        //    throw new NotImplementedException();
+        //}
+        //#endregion
 
         #region IsFileProtected
         /// <summary>
@@ -376,7 +408,7 @@ namespace PasswordProtectedChecker
                     }
 
                     // Now check the files in the zip
-                    tempDirectory = FileManager.GetTempDirectory();
+                    tempDirectory = TempDirectory;
                     foreach (ZipEntry zipEntry in zip)
                     {
                         if (zipEntry.IsFile)
@@ -451,7 +483,7 @@ namespace PasswordProtectedChecker
 
                             try
                             {
-                                tempDirectory = FileManager.GetTempDirectory();
+                                tempDirectory = TempDirectory;
                                 foreach (var attachment in message.Attachments)
                                 {
                                     var result = false;
@@ -521,7 +553,7 @@ namespace PasswordProtectedChecker
 
                     try
                     {
-                        tempDirectory = FileManager.GetTempDirectory();
+                        tempDirectory = TempDirectory;
                         foreach (var attachment in message.Attachments)
                         {
                             var attachmentFileName =

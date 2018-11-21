@@ -16,11 +16,13 @@ namespace PasswordProtectedChecker.Helpers
         /// <summary>
         /// Returns a temp directory
         /// </summary>
+        /// <param name="tempPath">The path where to create the temp directory or <c>null</c>
+        /// to use the default temp path</param>
         /// <returns></returns>
-        public static DirectoryInfo GetTempDirectory()
+        public static DirectoryInfo GetTempDirectory(string tempPath)
         {
-            var tempPath = Path.GetTempPath();
-            var tempDirectory = new DirectoryInfo(Path.Combine(tempPath, Guid.NewGuid().ToString()));
+            var temp = !string.IsNullOrEmpty(tempPath) ? tempPath : Path.GetTempPath();
+            var tempDirectory = new DirectoryInfo(Path.Combine(temp, Guid.NewGuid().ToString()));
             tempDirectory.Create();
             return tempDirectory;
         }
