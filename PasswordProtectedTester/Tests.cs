@@ -104,7 +104,6 @@ namespace PasswordProtectedTester
             var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
             Assert.IsTrue(result);
         }
-
         
         [TestMethod]
         public void EmlFileWithDocxWithPassword()

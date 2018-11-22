@@ -17,7 +17,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -27,7 +27,6 @@
 using System;
 using System.IO;
 using iTextSharp.text.pdf;
-using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
 using MsgReader.Outlook;
 using OpenMcdf;
@@ -73,43 +72,39 @@ namespace PasswordProtectedChecker
         }
         #endregion
 
-        //#region IsStreamProtected
-        ///// <summary>
-        ///// Returns <c>true</c> when the given file in the <paramref name="stream"/> is password protected
-        ///// </summary>
-        ///// <param name="stream"></param>
-        ///// <returns></returns>
-        ///// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        ///// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
-        //public bool IsStreamProtected(Stream stream)
-        //{
-        //    if (stream.Length < 100)
-        //        throw new PPCStreamToShort();
-
-        //    var buffer = new byte[100];
-
-        //    using (var binaryReader = new BinaryReader(stream))
-        //        binaryReader.Read(buffer, 0, 100);
-
-        //    var fileTypeFileInfo = FileTypeSelector.GetFileTypeFileInfo(buffer);
-
-        //    if (fileTypeFileInfo == null)
-        //        throw new PPCInvalidFile();
-
-        //    throw new NotImplementedException();
-        //}
-        //#endregion
-
-        #region IsFileProtected
+        #region IsStreamProtected
         /// <summary>
-        /// Returns <c>true</c> when the given <paramref name="fileName"/> is password protected
+        /// Returns <c>true</c> when the given file in the <paramref name="fileStream"/> is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">The file stream</param>
+        /// <param name="fileNameOrExtension">The filename or extension for the file that is inside the stream. When set to <c>null</c>
+        /// the method tries to autodetect the type of file that is inside the file stream</param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        public bool IsFileProtected(string fileName)
+        /// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
+        public bool IsStreamProtected(Stream fileStream, string fileNameOrExtension = null)
         {
-            var extension = Path.GetExtension(fileName);
+            string extension;
+
+            if (string.IsNullOrWhiteSpace(fileNameOrExtension))
+            {
+                if (fileStream.Length < 100)
+                    throw new PPCStreamToShort();
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    fileStream.CopyTo(memoryStream);
+                    var fileTypeFileInfo = FileTypeSelector.GetFileTypeFileInfo(memoryStream.ToArray());
+
+                    if (fileTypeFileInfo.MagicBytes == null)
+                        throw new PPCInvalidFile(
+                            "Could not autodetect the file type, use the extension parameter to set the file type");
+
+                    extension = fileTypeFileInfo.Extension;                }
+            }
+            else
+                extension = Path.GetExtension(fileNameOrExtension);
+
             extension = extension?.ToUpperInvariant();
 
             switch (extension)
@@ -119,10 +114,10 @@ namespace PasswordProtectedChecker
                 case ".DOCM":
                 case ".DOCX":
                 case ".DOTM":
-                    return IsWordPasswordProtected(fileName);
+                    return IsWordPasswordProtected(fileStream);
 
                 case ".ODT":
-                    return IsOpenDocumentFormatPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileStream);
 
                 case ".XLS":
                 case ".XLT":
@@ -132,10 +127,10 @@ namespace PasswordProtectedChecker
                 case ".XLSX":
                 case ".XLTM":
                 case ".XLTX":
-                    return IsExcellPasswordProtected(fileName);
+                    return IsExcelPasswordProtected(fileStream);
 
                 case ".ODS":
-                    return IsOpenDocumentFormatPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileStream);
 
                 case ".POT":
                 case ".PPT":
@@ -146,25 +141,39 @@ namespace PasswordProtectedChecker
                 case ".PPSX":
                 case ".PPTM":
                 case ".PPTX":
-                    return IsPowerPointPasswordProtected(fileName);
+                    return IsPowerPointPasswordProtected(fileStream);
 
                 case ".ODP":
-                    return IsOpenDocumentFormatPasswordProtected(fileName);
+                    return IsOpenDocumentFormatPasswordProtected(fileStream);
 
                 case ".PDF":
-                    return IsPdfPasswordProtected(fileName);
+                    return IsPdfPasswordProtected(fileStream);
 
                 case ".ZIP":
-                    return IsZipPasswordProtected(fileName);
+                    return IsZipPasswordProtected(fileStream);
 
                 case ".MSG":
-                    return IsMsgPasswordProtected(fileName);
+                    return IsMsgPasswordProtected(fileStream);
                 
                 case ".EML":
-                    return IsEmlPasswordProtected(fileName);
+                    return IsEmlPasswordProtected(fileStream);
             }
 
             return false;
+        }
+        #endregion
+
+        #region IsFileProtected
+        /// <summary>
+        /// Returns <c>true</c> when the given <paramref name="fileName"/> is password protected
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        public bool IsFileProtected(string fileName)
+        {
+            using (var fileStream = new FileInfo(fileName).Open(FileMode.Open))
+                return IsStreamProtected(fileStream, fileName);
         }
         #endregion
 
@@ -172,24 +181,23 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when the Word file is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsWordPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsWordPasswordProtected(Stream fileStream)
         {
             try
             {
-                using (var compoundFile = new CompoundFile(fileName))
+                using (var compoundFile = new CompoundFile(fileStream))
                 {
                     if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
 
-                    var stream = compoundFile.RootStorage.TryGetStream("WordDocument");
+                    var wordDocumentStream = compoundFile.RootStorage.TryGetStream("WordDocument");
 
-                    if (stream == null)
-                        throw new PPCFileIsCorrupt($"Could not find the WordDocument stream in the file '{fileName}'");
+                    if (wordDocumentStream == null)
+                        return false;
 
-                    var bytes = stream.GetData();
-                    using (var memoryStream = new MemoryStream(bytes))
+                    using (var memoryStream = new MemoryStream(wordDocumentStream.GetData()))
                     using (var binaryReader = new BinaryReader(memoryStream))
                     {
                         //http://msdn.microsoft.com/en-us/library/dd944620%28v=office.12%29.aspx
@@ -206,9 +214,9 @@ namespace PasswordProtectedChecker
                     }
                 }
             }
-            catch (CFCorruptedFileException)
+            catch (CFCorruptedFileException cfCorruptedFileException)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
             }
             catch (CFFileFormatException)
             {
@@ -218,30 +226,28 @@ namespace PasswordProtectedChecker
         }
         #endregion
 
-        #region IsExcellPasswordProtected
+        #region IsExcelPasswordProtected
         /// <summary>
         /// Returns <c>true</c> when the Excel file is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsExcellPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsExcelPasswordProtected(Stream fileStream)
         {
             try
             {
-                using (var compoundFile = new CompoundFile(fileName))
+                using (var compoundFile = new CompoundFile(fileStream))
                 {
                     if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
 
-                    var stream = compoundFile.RootStorage.TryGetStream("WorkBook");
-                    if (stream == null)
+                    var workBookStream = compoundFile.RootStorage.TryGetStream("WorkBook");
+                    if (workBookStream == null)
                         compoundFile.RootStorage.TryGetStream("Book");
 
-                    if (stream == null)
-                        throw new PPCFileIsCorrupt($"Could not find the WorkBook or Book stream in the file '{fileName}'");
+                    if (workBookStream == null) return false;
 
-                    var bytes = stream.GetData();
-                    using (var memoryStream = new MemoryStream(bytes))
+                    using (var memoryStream = new MemoryStream(workBookStream.GetData()))
                     using (var binaryReader = new BinaryReader(memoryStream))
                     {
                         // Get the record type, at the beginning of the stream this should always be the BOF
@@ -249,7 +255,7 @@ namespace PasswordProtectedChecker
 
                         // Something seems to be wrong, we would expect a BOF but for some reason it isn't so stop it
                         if (recordType != 0x809)
-                            throw new PPCFileIsCorrupt($"The file '{fileName}' is corrupt");
+                            throw new PPCFileIsCorrupt("The fileStream is corrupt expected recordType 0x809");
 
                         var recordLength = binaryReader.ReadUInt16();
                         binaryReader.BaseStream.Position += recordLength;
@@ -260,9 +266,9 @@ namespace PasswordProtectedChecker
                     }
                 }
             }
-            catch (CFCorruptedFileException)
+            catch (CFCorruptedFileException cfCorruptedFileException)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
             }
             catch (CFFileFormatException)
             {
@@ -276,20 +282,20 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when the binary PowerPoint file is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsPowerPointPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsPowerPointPasswordProtected(Stream fileStream)
         {
             try
             {
-                using (var compoundFile = new CompoundFile(fileName))
+                using (var compoundFile = new CompoundFile(fileStream))
                 {
                     if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
-                    var stream = compoundFile.RootStorage.TryGetStream("Current User");
-                    if (stream == null) return false;
+                    var currentUserStream = compoundFile.RootStorage.TryGetStream("Current User");
+                    if (currentUserStream == null) return false;
 
-                    using (var memoryStream = new MemoryStream(stream.GetData()))
+                    using (var memoryStream = new MemoryStream(currentUserStream.GetData()))
                     using (var binaryReader = new BinaryReader(memoryStream))
                     {
                         var verAndInstance = binaryReader.ReadUInt16();
@@ -319,9 +325,9 @@ namespace PasswordProtectedChecker
                     }
                 }
             }
-            catch (CFCorruptedFileException)
+            catch (CFCorruptedFileException cfCorruptedFileException)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
             }
             catch (CFFileFormatException)
             {
@@ -333,30 +339,38 @@ namespace PasswordProtectedChecker
 
         #region IsOpenDocumentFormatPasswordProtected
         /// <summary>
-        ///     Returns true when the <paramref name="inputFile" /> is password protected
+        ///     Returns true when the <paramref name="fileStream" /> is password protected
         /// </summary>
-        /// <param name="inputFile">The OpenDocument format file</param>
-        private bool IsOpenDocumentFormatPasswordProtected(string inputFile)
+        /// <param name="fileStream">A stream to the file</param>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsOpenDocumentFormatPasswordProtected(Stream fileStream)
         {
-            var zipFile = new ZipFile(inputFile);
-
-            // Check if the file is password protected
-            var manifestEntry = zipFile.FindEntry("META-INF/manifest.xml", true);
-            if (manifestEntry == -1) return false;
-            using (var manifestEntryStream = zipFile.GetInputStream(manifestEntry))
-            using (var manifestEntryMemoryStream = new MemoryStream())
+            try
             {
-                manifestEntryStream.CopyTo(manifestEntryMemoryStream);
-                manifestEntryMemoryStream.Position = 0;
-                using (var streamReader = new StreamReader(manifestEntryMemoryStream))
-                {
-                    var manifest = streamReader.ReadToEnd();
-                    if (manifest.ToUpperInvariant().Contains("ENCRYPTION-DATA"))
-                        return true;
-                }
-            }
+                var zipFile = new ZipFile(fileStream);
 
-            return false;
+                // Check if the file is password protected
+                var manifestEntry = zipFile.FindEntry("META-INF/manifest.xml", true);
+                if (manifestEntry == -1) return false;
+                using (var manifestEntryStream = zipFile.GetInputStream(manifestEntry))
+                using (var manifestEntryMemoryStream = new MemoryStream())
+                {
+                    manifestEntryStream.CopyTo(manifestEntryMemoryStream);
+                    manifestEntryMemoryStream.Position = 0;
+                    using (var streamReader = new StreamReader(manifestEntryMemoryStream))
+                    {
+                        var manifest = streamReader.ReadToEnd();
+                        if (manifest.ToUpperInvariant().Contains("ENCRYPTION-DATA"))
+                            return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception exception)
+            {
+                throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
+            }
         }
         #endregion
 
@@ -364,23 +378,23 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when the PDF file is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsPdfPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsPdfPasswordProtected(Stream fileStream)
         {
             try
             {
-                var reader = new PdfReader(fileName);
+                var reader = new PdfReader(fileStream);
                 return reader.IsEncrypted();
             }
             catch (BadPasswordException)
             {
                 return true;
             }
-            catch (BadPdfFormatException)
+            catch (BadPdfFormatException badPdfFormatException)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", badPdfFormatException);
             }
         }
         #endregion
@@ -389,16 +403,14 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when the ZIP file is password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsZipPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsZipPasswordProtected(Stream fileStream)
         {
-            DirectoryInfo tempDirectory = null;
-
             try
             {
-                using (var zip = new ZipFile(fileName))
+                using (var zip = new ZipFile(fileStream))
                 {
                     // First check the zip entries for passwords
                     foreach (ZipEntry zipEntry in zip)
@@ -407,39 +419,22 @@ namespace PasswordProtectedChecker
                             return true;
                     }
 
-                    // Now check the files in the zip
-                    tempDirectory = TempDirectory;
                     foreach (ZipEntry zipEntry in zip)
                     {
-                        if (zipEntry.IsFile)
+                        if (!zipEntry.IsFile) continue;
+                        using (var zipStream = zip.GetInputStream(zipEntry))
                         {
-                            var buffer = new byte[4096];
-                            var zipEntryFileName = FileManager.FileExistsMakeNew(Path.Combine(tempDirectory.FullName, zipEntry.Name));
-                            using(var zipStream = zip.GetInputStream(zipEntry))
-                            using (var streamWriter = File.Create(zipEntryFileName))
-                                StreamUtils.Copy(zipStream, streamWriter, buffer);
-
-                            var result = IsFileProtected(zipEntryFileName);
+                            var result = IsStreamProtected(zipStream, zipEntry.Name);
                             if (result) return true;
-                        }
-                        else if (zipEntry.IsDirectory)
-                        {
-                            var zipDirectory = new DirectoryInfo(Path.Combine(tempDirectory.FullName, zipEntry.Name));
-                            zipDirectory.Create();
                         }
                     }
                 }
 
                 return false;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
-            }
-            finally
-            {
-                if (tempDirectory != null && tempDirectory.Exists)
-                    tempDirectory.Delete(true);
+                throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
             }
         }
         #endregion
@@ -448,15 +443,14 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when one or more attachments in the MSG file are password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsMsgPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsMsgPasswordProtected(Stream fileStream)
         {
             try
             {
-                using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
-                using (var message = new Storage.Message(stream))
+                using (var message = new Storage.Message(fileStream))
                 {
                     switch (message.Type)
                     {
@@ -527,9 +521,9 @@ namespace PasswordProtectedChecker
                     return false;
                 }
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
             }
         }
         #endregion
@@ -538,14 +532,14 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns <c>true</c> when one or more attachments in the EML file are password protected
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        private bool IsEmlPasswordProtected(string fileName)
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
+        private bool IsEmlPasswordProtected(Stream fileStream)
         {
             try
             {
-                using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read))
+                using (var stream = fileStream)
                 {
                     var message = MsgReader.Mime.Message.Load(stream);
                     if (message.Attachments == null) return false;
@@ -574,9 +568,9 @@ namespace PasswordProtectedChecker
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                throw new PPCFileIsCorrupt($"The file '{Path.GetFileName(fileName)}' is corrupt");
+                throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
             }
         }
         #endregion

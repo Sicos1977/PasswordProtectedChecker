@@ -17,7 +17,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -367,7 +367,6 @@ namespace PasswordProtectedChecker.Helpers
             var dataAsString = Encoding.ASCII.GetString(fileBytes);
             var result = FileTypes.FirstOrDefault(fileType => dataAsString.StartsWith(fileType.MagicBytesAsString));
 
-            // Omdat er bepaalde bestanden zijn die we nog nader moeten onderzoeken gooien we deze door de swtich statement
             if (result != null)
             {
                 switch (result.Extension)
@@ -468,7 +467,6 @@ namespace PasswordProtectedChecker.Helpers
             if (fileAscii.Contains("CHNKWKS"))
                 return new FileTypeFileInfo(null, "wks", "Microsoft Works");
 
-            // Anders is het waarschijnlijk een ZIP bestand
             return new FileTypeFileInfo(null, "zip", "Zip compressed archive");
         }
         #endregion
