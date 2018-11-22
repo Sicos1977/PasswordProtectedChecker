@@ -423,8 +423,11 @@ namespace PasswordProtectedChecker
                     {
                         if (!zipEntry.IsFile) continue;
                         using (var zipStream = zip.GetInputStream(zipEntry))
+                        using (var memoryStream = new MemoryStream())
                         {
-                            var result = IsStreamProtected(zipStream, zipEntry.Name);
+                            zipStream.CopyTo(memoryStream);
+                            memoryStream.Position = 0;
+                            var result = IsStreamProtected(memoryStream, zipEntry.Name);
                             if (result) return true;
                         }
                     }
