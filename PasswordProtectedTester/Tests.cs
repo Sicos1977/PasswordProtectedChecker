@@ -10,106 +10,106 @@ namespace PasswordProtectedTester
         [TestMethod]
         public void DocWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.doc");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.doc");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void DocxWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.docx");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.docx");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void OdpWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odp");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odp");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void OdsWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ods");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ods");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void OdtWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odt");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.odt");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void PdfWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void PdfWithoutPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\NotPasswordProtected.pdf");
-            Assert.IsFalse(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\NotPasswordProtected.pdf");
+            Assert.IsFalse(checkerResult.Result);
         }
 
         [TestMethod]
         public void PptWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ppt");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.ppt");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void PptxWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pptx");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pptx");
+            Assert.IsTrue(checkerResult.Result);
         }
         
         [TestMethod]
         public void XlsWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xls");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xls");
+            Assert.IsTrue(checkerResult.Result);
         }
         
         [TestMethod]
         public void XlsxWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xlsx");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xlsx");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void ZipWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.zip");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.zip");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void ZipWithPasswordProtectedZipEntry()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtectedZipEntry.zip");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtectedZipEntry.zip");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         [TestMethod]
         public void MsgFileWithDocxWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
+            Assert.IsTrue(checkerResult.Result);
         }
         
         [TestMethod]
         public void EmlFileWithDocxWithPassword()
         {
-            var result = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.eml");
-            Assert.IsTrue(result);
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.eml");
+            Assert.IsTrue(checkerResult.Result);
         }
 
         private static string GetCurrentDir()

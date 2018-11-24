@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 
 namespace PasswordProtectedChecker
 {
@@ -12,19 +13,35 @@ namespace PasswordProtectedChecker
         /// <summary>
         /// Returns the result
         /// </summary>
-        public bool Result { get; }
+        public bool Result { get; internal set; }
 
         /// <summary>
-        /// Returns the breadcrumb trail to the file that returns <c>true</c> in the
+        /// The breadcrumbs that lead to the file that is password protected
         /// <see cref="Result"/> property
         /// </summary>
-        public List<string> BreadCrumbs => new List<string>();
+        public List<string> BreadCrumbs { get; }
+
+        /// <summary>
+        /// Returns the trail to the password protected file
+        /// </summary>
+        public string Trail => string.Join(" --> ", BreadCrumbs);
         #endregion
 
-        #region AddBreadCrumbTrail
-        public void AddBreadCrumbTrail(string trail)
+        #region Constructor
+        internal CheckerResult()
         {
-            BreadCrumbs.Add(trail);
+            BreadCrumbs = new List<string>();
+        }
+        #endregion
+
+        #region AddFile
+        /// <summary>
+        /// Adds a file to the trail
+        /// </summary>
+        /// <param name="file"></param>
+        internal void AddFile(string file)
+        {
+            BreadCrumbs.Add(Path.GetFileName(file));
         }
         #endregion
     }
