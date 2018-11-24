@@ -14,11 +14,9 @@ var result = Checker.IsFileProtected("myfile.doc");
 or
 
 ```c#
-var checker = new Checker(<my temporary folder>);
-var result = Checker.IsFileProtected("myfile.doc");
+var checker = new Checker();
+var result = Checker.IsStreamProtected(myFileStream, ".doc");
 ```
-
-If you want it to make temporary files in another existing location.
 
 Installing via NuGet
 ====================
