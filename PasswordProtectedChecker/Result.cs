@@ -7,13 +7,13 @@ namespace PasswordProtectedChecker
     ///     A placeholder to return the result of a check with a breadcrumb trail about the
     ///     file that has a password when the result is <c>true</c>
     /// </summary>
-    public class CheckerResult
+    public sealed class Result
     {
         #region Properties
         /// <summary>
         ///     Returns the result
         /// </summary>
-        public bool Result { get; internal set; }
+        public bool Protected { get; internal set; }
 
         /// <summary>
         ///     The file parent
@@ -26,9 +26,9 @@ namespace PasswordProtectedChecker
         public List<string> Children { get; }
 
         /// <summary>
-        ///     The <see cref="CheckerResult"/> parent
+        ///     The <see cref="Result"/> parent
         /// </summary>
-        public CheckerResult ParentCheckerResult { get; internal set; }
+        public Result ParentResult { get; internal set; }
 
         /// <summary>
         ///     Returns the trail to the password protected file
@@ -39,12 +39,12 @@ namespace PasswordProtectedChecker
             {
                 var result = Parent + " -> " + Children[Children.Count - 1];
 
-                var parentCheckerResult = ParentCheckerResult;
+                var parentCheckerResult = ParentResult;
 
                 while (parentCheckerResult != null)
                 {
                     result = parentCheckerResult.Parent + " -> " + result;
-                    parentCheckerResult = parentCheckerResult.ParentCheckerResult;
+                    parentCheckerResult = parentCheckerResult.ParentResult;
                 }
 
                 return result;
@@ -53,7 +53,7 @@ namespace PasswordProtectedChecker
         #endregion
         
         #region Constructor
-        internal CheckerResult()
+        internal Result()
         {
             Children = new List<string>();
         }
