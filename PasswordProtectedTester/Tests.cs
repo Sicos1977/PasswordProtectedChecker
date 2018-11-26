@@ -1,6 +1,6 @@
-﻿using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PasswordProtectedChecker;
+using System.IO;
 
 namespace PasswordProtectedTester
 {
@@ -69,14 +69,14 @@ namespace PasswordProtectedTester
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pptx");
             Assert.IsTrue(checkerResult.Protected);
         }
-        
+
         [TestMethod]
         public void XlsWithPassword()
         {
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.xls");
             Assert.IsTrue(checkerResult.Protected);
         }
-        
+
         [TestMethod]
         public void XlsxWithPassword()
         {
@@ -88,6 +88,7 @@ namespace PasswordProtectedTester
         public void ZipWithPassword()
         {
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.zip");
+            Assert.IsTrue(checkerResult.Trail == "PasswordProtected.zip -> test.txt");
             Assert.IsTrue(checkerResult.Protected);
         }
 
@@ -104,7 +105,7 @@ namespace PasswordProtectedTester
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.msg");
             Assert.IsTrue(checkerResult.Protected);
         }
-        
+
         [TestMethod]
         public void MsgFileWithMsgWithDocxWithPassword()
         {
@@ -125,7 +126,7 @@ namespace PasswordProtectedTester
         public void ZipWithMsgFileWithEmlWithDocxWithPassword()
         {
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\ZipWithMsgFileWithEmlWithDocxWithPassword.zip");
-            Assert.IsTrue(checkerResult.Trail == "MsgFileWithEmlWithDocxWithPassword.msg -> PasswordProtected.eml -> PasswordProtected.docx");
+            Assert.IsTrue(checkerResult.Trail == "ZipWithMsgFileWithEmlWithDocxWithPassword.zip -> MsgFileWithEmlWithDocxWithPassword.msg -> PasswordProtected.eml -> PasswordProtected.docx");
             Assert.IsTrue(checkerResult.Protected);
         }
 

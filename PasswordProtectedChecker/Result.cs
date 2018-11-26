@@ -37,7 +37,12 @@ namespace PasswordProtectedChecker
         {
             get
             {
-                var result = Parent + " -> " + Children[Children.Count - 1];
+                var result = string.Empty;
+                if (!string.IsNullOrEmpty(Parent))
+                    result += Parent;
+
+                if (Children.Count > 0)
+                    result += " -> " + Children[Children.Count - 1];
 
                 var parentCheckerResult = ParentResult;
 

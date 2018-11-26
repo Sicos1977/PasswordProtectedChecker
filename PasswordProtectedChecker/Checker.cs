@@ -463,6 +463,7 @@ namespace PasswordProtectedChecker
                         if (zipEntry.IsCrypted)
                         {
                             checkerResult.Protected = true;
+                            checkerResult.AddChildFile(zipEntry.Name);
                             return checkerResult;
                         }
 
@@ -474,8 +475,8 @@ namespace PasswordProtectedChecker
                         {
                             zipStream.CopyTo(memoryStream);
                             memoryStream.Position = 0;
-                            if (!IsStreamProtected(memoryStream, zipEntry.Name, checkerResult).Protected) continue;
-                            checkerResult.Protected = true;
+                            checkerResult = IsStreamProtected(memoryStream, zipEntry.Name, checkerResult);
+                            if (!checkerResult.Protected) continue;
                             return checkerResult;
                         }
                     }
@@ -592,8 +593,8 @@ namespace PasswordProtectedChecker
                     foreach (var attachment in message.Attachments)
                         using (var memoryStream = new MemoryStream(attachment.Body))
                         {
-                            if (!IsStreamProtected(memoryStream, attachment.FileName, checkerResult).Protected) continue;
-                            checkerResult.Protected = true;
+                            checkerResult = IsStreamProtected(memoryStream, attachment.FileName, checkerResult);
+                            if (!checkerResult.Protected) continue;
                             return checkerResult;
                         }
 
