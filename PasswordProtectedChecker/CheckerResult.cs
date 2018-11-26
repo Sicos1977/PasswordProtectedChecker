@@ -4,44 +4,80 @@ using System.IO;
 namespace PasswordProtectedChecker
 {
     /// <summary>
-    /// A placeholder to return the result of a check with a breadcrumb trail about the
-    /// file that has a password when the result is <c>true</c>
+    ///     A placeholder to return the result of a check with a breadcrumb trail about the
+    ///     file that has a password when the result is <c>true</c>
     /// </summary>
     public class CheckerResult
     {
         #region Properties
         /// <summary>
-        /// Returns the result
+        ///     Returns the result
         /// </summary>
         public bool Result { get; internal set; }
 
         /// <summary>
-        /// The breadcrumbs that lead to the file that is password protected
-        /// <see cref="Result"/> property
+        ///     The file parent
         /// </summary>
-        public List<string> BreadCrumbs { get; }
+        public string Parent { get; private set; }
 
         /// <summary>
-        /// Returns the trail to the password protected file
+        ///     The children files
         /// </summary>
-        public string Trail => string.Join(" --> ", BreadCrumbs);
-        #endregion
+        public List<string> Children { get; }
 
+        /// <summary>
+        ///     The <see cref="CheckerResult"/> parent
+        /// </summary>
+        public CheckerResult ParentCheckerResult { get; internal set; }
+
+        /// <summary>
+        ///     Returns the trail to the password protected file
+        /// </summary>
+        public string Trail
+        {
+            get
+            {
+                var result = Parent + " -> " + Children[Children.Count - 1];
+
+                var parentCheckerResult = ParentCheckerResult;
+
+                while (parentCheckerResult != null)
+                {
+                    result = parentCheckerResult.Parent + " -> " + result;
+                    parentCheckerResult = parentCheckerResult.ParentCheckerResult;
+                }
+
+                return result;
+            }
+        }
+        #endregion
+        
         #region Constructor
         internal CheckerResult()
         {
-            BreadCrumbs = new List<string>();
+            Children = new List<string>();
         }
         #endregion
 
-        #region AddFile
+        #region AddParentFile
         /// <summary>
-        /// Adds a file to the trail
+        ///     Adds a file to the trail
         /// </summary>
         /// <param name="file"></param>
-        internal void AddFile(string file)
+        internal void AddParentFile(string file)
         {
-            BreadCrumbs.Add(Path.GetFileName(file));
+            Parent = Path.GetFileName(file);
+        }
+        #endregion
+
+        #region AddChildFile
+        /// <summary>
+        ///     Adds a file to the trail
+        /// </summary>
+        /// <param name="file"></param>
+        internal void AddChildFile(string file)
+        {
+            Children.Add(Path.GetFileName(file));
         }
         #endregion
     }

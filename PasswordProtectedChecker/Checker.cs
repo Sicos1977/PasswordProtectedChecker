@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using iTextSharp.text.pdf;
 using ICSharpCode.SharpZipLib.Zip;
+using MsgReader.Mime;
 using MsgReader.Outlook;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
@@ -36,44 +37,56 @@ using PasswordProtectedChecker.Helpers;
 namespace PasswordProtectedChecker
 {
     /// <summary>
-    /// A class with methods to check if a file is password protected
+    ///     A class with methods to check if a file is password protected
     /// </summary>
     public class Checker
     {
-        #region Fields
+        #region IsFileProtected
         /// <summary>
-        /// <see cref="CheckerResult"/>
+        ///     Returns <c>true</c> when the given <paramref name="fileName" /> is password protected
         /// </summary>
-        private CheckerResult _checkerResult;
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
+        public CheckerResult IsFileProtected(string fileName)
+        {
+            using (var fileStream = new FileInfo(fileName).Open(FileMode.Open))
+            {
+                return IsStreamProtected(fileStream, fileName);
+            }
+        }
         #endregion
 
         #region IsStreamProtected
         /// <summary>
-        /// Returns <c>true</c> when the given file in the <paramref name="fileStream"/> is password protected
+        ///     Returns <c>true</c> when the given file in the <paramref name="fileStream" /> is password protected
         /// </summary>
         /// <param name="fileStream">The file stream</param>
-        /// <param name="fileNameOrExtension">The filename or extension for the file that is inside the stream. When set to <c>null</c>
-        /// the method tries to autodetect the type of file that is inside the file stream</param>
+        /// <param name="fileNameOrExtension">
+        ///     The filename or extension for the file that is inside the stream. When set to <c>null</c>
+        ///     the method tries to autodetect the type of file that is inside the file stream
+        /// </param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
         /// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
         public CheckerResult IsStreamProtected(Stream fileStream, string fileNameOrExtension = null)
         {
-            _checkerResult = new CheckerResult();
-            return IsStreamProtected(fileStream, fileNameOrExtension, _checkerResult);
+            return IsStreamProtected(fileStream, fileNameOrExtension, null);
         }
 
         /// <summary>
-        /// Returns <c>true</c> when the given file in the <paramref name="fileStream"/> is password protected
+        ///     Returns <c>true</c> when the given file in the <paramref name="fileStream" /> is password protected
         /// </summary>
         /// <param name="fileStream">The file stream</param>
-        /// <param name="fileNameOrExtension">The filename or extension for the file that is inside the stream. When set to <c>null</c>
-        /// the method tries to autodetect the type of file that is inside the file stream</param>
+        /// <param name="fileNameOrExtension">
+        ///     The filename or extension for the file that is inside the stream. When set to <c>null</c>
+        ///     the method tries to autodetect the type of file that is inside the file stream
+        /// </param>
         /// <param name="checkerResult"></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
         /// <exception cref="PPCInvalidFile">Raised when the program could not detect what kind of file the stream is</exception>
-        private CheckerResult IsStreamProtected(Stream fileStream, 
+        private CheckerResult IsStreamProtected(Stream fileStream,
             string fileNameOrExtension,
             CheckerResult checkerResult)
         {
@@ -93,19 +106,28 @@ namespace PasswordProtectedChecker
                         throw new PPCInvalidFile(
                             "Could not autodetect the file type, use the extension parameter to set the file type");
 
-                    extension = fileTypeFileInfo.Extension;                }
+                    extension = fileTypeFileInfo.Extension;
+                }
             }
             else
+            {
                 extension = Path.GetExtension(fileNameOrExtension);
+            }
 
             extension = extension?.ToUpperInvariant();
+            var root = false;
 
             if (checkerResult == null)
+            {
+                root = true;
                 checkerResult = new CheckerResult();
-
-            checkerResult.AddFile(fileNameOrExtension);
-
-            var result = false;
+                checkerResult.AddParentFile(
+                    !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+            }
+            else
+            {
+                checkerResult.AddChildFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+            }
 
             switch (extension)
             {
@@ -114,11 +136,11 @@ namespace PasswordProtectedChecker
                 case ".DOCM":
                 case ".DOCX":
                 case ".DOTM":
-                    result = IsWordPasswordProtected(fileStream);
+                    checkerResult.Result = IsWordPasswordProtected(fileStream);
                     break;
 
                 case ".ODT":
-                    result = IsOpenDocumentFormatPasswordProtected(fileStream);
+                    checkerResult.Result = IsOpenDocumentFormatPasswordProtected(fileStream);
                     break;
 
                 case ".XLS":
@@ -129,11 +151,11 @@ namespace PasswordProtectedChecker
                 case ".XLSX":
                 case ".XLTM":
                 case ".XLTX":
-                    result = IsExcelPasswordProtected(fileStream);
+                    checkerResult.Result = IsExcelPasswordProtected(fileStream);
                     break;
 
                 case ".ODS":
-                    result = IsOpenDocumentFormatPasswordProtected(fileStream);
+                    checkerResult.Result = IsOpenDocumentFormatPasswordProtected(fileStream);
                     break;
 
                 case ".POT":
@@ -145,52 +167,64 @@ namespace PasswordProtectedChecker
                 case ".PPSX":
                 case ".PPTM":
                 case ".PPTX":
-                    result = IsPowerPointPasswordProtected(fileStream);
+                    checkerResult.Result = IsPowerPointPasswordProtected(fileStream);
                     break;
 
                 case ".ODP":
-                    result = IsOpenDocumentFormatPasswordProtected(fileStream);
+                    checkerResult.Result = IsOpenDocumentFormatPasswordProtected(fileStream);
                     break;
 
                 case ".PDF":
-                    result = IsPdfPasswordProtected(fileStream);
+                    checkerResult.Result = IsPdfPasswordProtected(fileStream);
                     break;
 
                 case ".ZIP":
-                    result = IsZipPasswordProtected(fileStream);
+                    
+                    if (!root)
+                    {
+                        var childCheckerResult = new CheckerResult {ParentCheckerResult = checkerResult};
+                        childCheckerResult.AddParentFile(
+                            !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                        checkerResult = childCheckerResult;
+                    }
+                    
+                    checkerResult = IsZipPasswordProtected(fileStream, checkerResult);
                     break;
 
                 case ".MSG":
-                    result = IsMsgPasswordProtected(fileStream);
+
+                    if (!root)
+                    {
+                        var childCheckerResult = new CheckerResult {ParentCheckerResult = checkerResult};
+                        childCheckerResult.AddParentFile(
+                            !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                        checkerResult = childCheckerResult;
+                    }
+
+                    checkerResult = IsMsgPasswordProtected(fileStream, checkerResult);
                     break;
-                
+
                 case ".EML":
-                    result = IsEmlPasswordProtected(fileStream);
+                    
+                    if (!root)
+                    {
+                        var childCheckerResult = new CheckerResult {ParentCheckerResult = checkerResult};
+                        childCheckerResult.AddParentFile(
+                            !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                        checkerResult = childCheckerResult;
+                    }
+                    
+                    checkerResult = IsEmlPasswordProtected(fileStream, checkerResult);
                     break;
             }
 
-            checkerResult.Result = result;
             return checkerResult;
-        }
-        #endregion
-
-        #region IsFileProtected
-        /// <summary>
-        /// Returns <c>true</c> when the given <paramref name="fileName"/> is password protected
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file is corrupt</exception>
-        public CheckerResult IsFileProtected(string fileName)
-        {
-            using (var fileStream = new FileInfo(fileName).Open(FileMode.Open))
-                return IsStreamProtected(fileStream, fileName);
         }
         #endregion
 
         #region IsWordPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when the Word file is password protected
+        ///     Returns <c>true</c> when the Word file is password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
@@ -239,7 +273,7 @@ namespace PasswordProtectedChecker
 
         #region IsExcelPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when the Excel file is password protected
+        ///     Returns <c>true</c> when the Excel file is password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
@@ -291,7 +325,7 @@ namespace PasswordProtectedChecker
 
         #region IsPowerPointPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when the binary PowerPoint file is password protected
+        ///     Returns <c>true</c> when the binary PowerPoint file is password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
@@ -385,9 +419,9 @@ namespace PasswordProtectedChecker
         }
         #endregion
 
-        #region IsPowerPointPasswordProtected
+        #region IsPdfPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when the PDF file is password protected
+        ///     Returns <c>true</c> when the PDF file is password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
         /// <returns></returns>
@@ -412,12 +446,13 @@ namespace PasswordProtectedChecker
 
         #region IsZipPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when the ZIP file is password protected
+        ///     Returns <c>true</c> when the ZIP file is password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
+        /// <param name="checkerResult"><see cref="CheckerResult"/></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
-        private bool IsZipPasswordProtected(Stream fileStream)
+        private CheckerResult IsZipPasswordProtected(Stream fileStream, CheckerResult checkerResult)
         {
             try
             {
@@ -425,10 +460,11 @@ namespace PasswordProtectedChecker
                 {
                     // First check the zip entries for passwords
                     foreach (ZipEntry zipEntry in zip)
-                    {
                         if (zipEntry.IsCrypted)
-                            return true;
-                    }
+                        {
+                            checkerResult.Result = true;
+                            return checkerResult;
+                        }
 
                     foreach (ZipEntry zipEntry in zip)
                     {
@@ -438,13 +474,14 @@ namespace PasswordProtectedChecker
                         {
                             zipStream.CopyTo(memoryStream);
                             memoryStream.Position = 0;
-                            if (IsStreamProtected(memoryStream, zipEntry.Name, _checkerResult).Result)
-                                return true;
+                            if (!IsStreamProtected(memoryStream, zipEntry.Name, checkerResult).Result) continue;
+                            checkerResult.Result = true;
+                            return checkerResult;
                         }
                     }
                 }
 
-                return false;
+                return checkerResult;
             }
             catch (Exception exception)
             {
@@ -455,12 +492,13 @@ namespace PasswordProtectedChecker
 
         #region IsMsgPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when one or more attachments in the MSG file are password protected
+        ///     Returns <c>true</c> when one or more attachments in the MSG file are password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
+        /// <param name="checkerResult"><see cref="CheckerResult"/></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
-        private bool IsMsgPasswordProtected(Stream fileStream)
+        private CheckerResult IsMsgPasswordProtected(Stream fileStream, CheckerResult checkerResult)
         {
             try
             {
@@ -490,39 +528,40 @@ namespace PasswordProtectedChecker
 
                             foreach (var attachment in message.Attachments)
                             {
-                                var checkerResult = new CheckerResult();
-
                                 switch (attachment)
                                 {
                                     case Storage.Attachment attach when attach.Data == null:
                                         continue;
+
                                     case Storage.Attachment attach:
                                     {
                                         using (var memoryStream = new MemoryStream(attach.Data))
-                                            checkerResult = IsStreamProtected(memoryStream, attach.FileName,
-                                                _checkerResult);
+                                        {
+                                            checkerResult = IsStreamProtected(memoryStream, attach.FileName, checkerResult);
+                                        }
+
                                         break;
                                     }
+
                                     case Storage.Message msg:
                                     {
                                         using (var memoryStream = new MemoryStream())
                                         {
                                             msg.Save(memoryStream);
-                                            checkerResult = IsStreamProtected(memoryStream, msg.FileName,
-                                                _checkerResult);
+                                            checkerResult = IsStreamProtected(memoryStream, msg.FileName, checkerResult);
                                         }
 
                                         break;
                                     }
                                 }
 
-                                if (checkerResult.Result) return true;
+                                if (checkerResult.Result) return checkerResult;
                             }
 
-                            return false;
+                            break;
                     }
 
-                    return false;
+                    return checkerResult;
                 }
             }
             catch (Exception exception)
@@ -534,30 +573,31 @@ namespace PasswordProtectedChecker
 
         #region IsEmlPasswordProtected
         /// <summary>
-        /// Returns <c>true</c> when one or more attachments in the EML file are password protected
+        ///     Returns <c>true</c> when one or more attachments in the EML file are password protected
         /// </summary>
         /// <param name="fileStream">A stream to the file</param>
+        /// <param name="checkerResult"><see cref="CheckerResult"/></param>
         /// <returns></returns>
         /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
-        private bool IsEmlPasswordProtected(Stream fileStream)
+        private CheckerResult IsEmlPasswordProtected(Stream fileStream, CheckerResult checkerResult)
         {
             try
             {
                 using (var stream = fileStream)
                 {
-                    var message = MsgReader.Mime.Message.Load(stream);
-                    if (message.Attachments == null) return false;
+                    var message = Message.Load(stream);
+                    if (message.Attachments == null) 
+                        return checkerResult;
 
                     foreach (var attachment in message.Attachments)
-                    {
                         using (var memoryStream = new MemoryStream(attachment.Body))
                         {
-                            if (IsStreamProtected(memoryStream, attachment.FileName, _checkerResult).Result)
-                                return true;
+                            if (!IsStreamProtected(memoryStream, attachment.FileName, checkerResult).Result) continue;
+                            checkerResult.Result = true;
+                            return checkerResult;
                         }
-                    }
 
-                    return false;
+                    return checkerResult;
                 }
             }
             catch (Exception exception)

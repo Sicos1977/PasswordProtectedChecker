@@ -106,6 +106,30 @@ namespace PasswordProtectedTester
         }
         
         [TestMethod]
+        public void MsgFileWithMsgWithDocxWithPassword()
+        {
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\MsgFileWithMsgWithDocxWithPassword.msg");
+            Assert.IsTrue(checkerResult.Trail == "MsgFileWithMsgWithDocxWithPassword.msg -> An MSG file with a password protected Word document.msg -> PasswordProtected.docx");
+            Assert.IsTrue(checkerResult.Result);
+        }
+
+        [TestMethod]
+        public void MsgFileWithEmlWithDocxWithPassword()
+        {
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\MsgFileWithEmlWithDocxWithPassword.msg");
+            Assert.IsTrue(checkerResult.Trail == "MsgFileWithEmlWithDocxWithPassword.msg -> PasswordProtected.eml -> PasswordProtected.docx");
+            Assert.IsTrue(checkerResult.Result);
+        }
+
+        [TestMethod]
+        public void ZipWithMsgFileWithEmlWithDocxWithPassword()
+        {
+            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\ZipWithMsgFileWithEmlWithDocxWithPassword.zip");
+            Assert.IsTrue(checkerResult.Trail == "MsgFileWithEmlWithDocxWithPassword.msg -> PasswordProtected.eml -> PasswordProtected.docx");
+            Assert.IsTrue(checkerResult.Result);
+        }
+
+        [TestMethod]
         public void EmlFileWithDocxWithPassword()
         {
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.eml");
