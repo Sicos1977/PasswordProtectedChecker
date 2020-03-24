@@ -26,7 +26,6 @@
 
 using System;
 using System.IO;
-using iTextSharp.text.pdf;
 using ICSharpCode.SharpZipLib.Zip;
 using MsgReader.Mime;
 using MsgReader.Outlook;
@@ -172,10 +171,6 @@ namespace PasswordProtectedChecker
 
                 case ".ODP":
                     checkerResult.Protected = IsOpenDocumentFormatPasswordProtected(fileStream);
-                    break;
-
-                case ".PDF":
-                    checkerResult.Protected = IsPdfPasswordProtected(fileStream);
                     break;
 
                 case ".ZIP":
@@ -415,31 +410,6 @@ namespace PasswordProtectedChecker
             catch (Exception exception)
             {
                 throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
-            }
-        }
-        #endregion
-
-        #region IsPdfPasswordProtected
-        /// <summary>
-        ///     Returns <c>true</c> when the PDF file is password protected
-        /// </summary>
-        /// <param name="fileStream">A stream to the file</param>
-        /// <returns></returns>
-        /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
-        private bool IsPdfPasswordProtected(Stream fileStream)
-        {
-            try
-            {
-                var reader = new PdfReader(fileStream);
-                return reader.IsEncrypted();
-            }
-            catch (BadPasswordException)
-            {
-                return true;
-            }
-            catch (BadPdfFormatException badPdfFormatException)
-            {
-                throw new PPCFileIsCorrupt("The file stream is corrupt", badPdfFormatException);
             }
         }
         #endregion
