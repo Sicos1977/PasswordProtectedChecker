@@ -230,9 +230,11 @@ namespace PasswordProtectedChecker
             {
                 using (var compoundFile = new CompoundFile(fileStream))
                 {
-                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
+                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
 
-                    if (!compoundFile.RootStorage.TryGetStream("WordDocument", out var wordDocumentStream))
+                    var wordDocumentStream = compoundFile.RootStorage.TryGetStream("WordDocument");
+
+                    if (wordDocumentStream == null)
                         return false;
 
                     using (var memoryStream = new MemoryStream(wordDocumentStream.GetData()))
@@ -277,10 +279,11 @@ namespace PasswordProtectedChecker
             {
                 using (var compoundFile = new CompoundFile(fileStream))
                 {
-                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
+                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
 
-                    if(!compoundFile.RootStorage.TryGetStream("WorkBook", out var workBookStream))
-                        compoundFile.RootStorage.TryGetStream("Book", out workBookStream);
+                    var workBookStream = compoundFile.RootStorage.TryGetStream("WorkBook");
+                    if (workBookStream == null)
+                        compoundFile.RootStorage.TryGetStream("Book");
 
                     if (workBookStream == null) return false;
 
@@ -328,9 +331,9 @@ namespace PasswordProtectedChecker
             {
                 using (var compoundFile = new CompoundFile(fileStream))
                 {
-                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
-                    if (!compoundFile.RootStorage.TryGetStream("Current User", out var currentUserStream))
-                        return false;
+                    if (compoundFile.RootStorage.TryGetStream("EncryptedPackage") != null) return true;
+                    var currentUserStream = compoundFile.RootStorage.TryGetStream("Current User");
+                    if (currentUserStream == null) return false;
 
                     using (var memoryStream = new MemoryStream(currentUserStream.GetData()))
                     using (var binaryReader = new BinaryReader(memoryStream))
