@@ -166,7 +166,7 @@ namespace PasswordProtectedChecker
                 case ".PPSX":
                 case ".PPTM":
                 case ".PPTX":
-                    checkerResult.Protected = IsPowerPointPasswordProtected(fileStream);
+                   // checkerResult.Protected = IsPowerPointPasswordProtected(fileStream);
                     break;
 
                 case ".ODP":
