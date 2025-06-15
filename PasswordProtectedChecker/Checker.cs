@@ -32,6 +32,7 @@ using MsgReader.Outlook;
 using OpenMcdf;
 using PasswordProtectedChecker.Exceptions;
 using PasswordProtectedChecker.Helpers;
+using Storage = MsgReader.Outlook.Storage;
 
 namespace PasswordProtectedChecker;
 
@@ -223,14 +224,13 @@ public class Checker
     {
         try
         {
-            using var compoundFile = new CompoundFile(fileStream);
-            if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
+            using var compoundFile = RootStorage.Open(fileStream);
+            if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
 
-            if (!compoundFile.RootStorage.TryGetStream("WordDocument", out var wordDocumentStream))
+            if (!compoundFile.TryOpenStream("WordDocument", out var wordDocumentStream))
                 return false;
 
-            using var memoryStream = new MemoryStream(wordDocumentStream.GetData());
-            using var binaryReader = new BinaryReader(memoryStream);
+            using var binaryReader = new BinaryReader(wordDocumentStream);
             //http://msdn.microsoft.com/en-us/library/dd944620%28v=office.12%29.aspx
             // The bit that shows if the file is encrypted is in the 11th and 12th byte so we 
             // need to skip the first 10 bytes
@@ -243,11 +243,19 @@ public class Checker
             // The bit that tells us if the file is encrypted
             return (pnNext & 0x0100) == 0x0100;
         }
-        catch (CFCorruptedFileException cfCorruptedFileException)
+        catch (ArgumentNullException argumentNullException)
         {
-            throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentNullException);
         }
-        catch (CFFileFormatException)
+        catch (ArgumentOutOfRangeException argumentOutOfRangeException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentOutOfRangeException);
+        }
+        catch (ArgumentException argumentException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentException);
+        }
+        catch (Exception)
         {
             // It seems the file is just a normal Microsoft Office 2007 and up Open XML file
             return false;
@@ -266,16 +274,15 @@ public class Checker
     {
         try
         {
-            using var compoundFile = new CompoundFile(fileStream);
-            if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
+            using var compoundFile = RootStorage.Open(fileStream);
+            if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
 
-            if(!compoundFile.RootStorage.TryGetStream("WorkBook", out var workBookStream))
-                compoundFile.RootStorage.TryGetStream("Book", out workBookStream);
+            if(!compoundFile.TryOpenStream("WorkBook", out var workBookStream))
+                compoundFile.TryOpenStream("Book", out workBookStream);
 
             if (workBookStream == null) return false;
 
-            using var memoryStream = new MemoryStream(workBookStream.GetData());
-            using var binaryReader = new BinaryReader(memoryStream);
+            using var binaryReader = new BinaryReader(workBookStream);
             // Get the record type, at the beginning of the stream this should always be the BOF
             var recordType = binaryReader.ReadUInt16();
 
@@ -290,11 +297,19 @@ public class Checker
             recordType = binaryReader.ReadUInt16();
             return recordType == 0x2F;
         }
-        catch (CFCorruptedFileException cfCorruptedFileException)
+        catch (ArgumentNullException argumentNullException)
         {
-            throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentNullException);
         }
-        catch (CFFileFormatException)
+        catch (ArgumentOutOfRangeException argumentOutOfRangeException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentOutOfRangeException);
+        }
+        catch (ArgumentException argumentException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentException);
+        }
+        catch (Exception)
         {
             // It seems the file is just a normal Microsoft Office 2007 and up Open XML file
             return false;
@@ -313,13 +328,12 @@ public class Checker
     {
         try
         {
-            using var compoundFile = new CompoundFile(fileStream);
-            if (compoundFile.RootStorage.TryGetStream("EncryptedPackage", out _)) return true;
-            if (!compoundFile.RootStorage.TryGetStream("Current User", out var currentUserStream))
+            using var compoundFile = RootStorage.Open(fileStream);
+            if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
+            if (!compoundFile.TryOpenStream("Current User", out var currentUserStream))
                 return false;
 
-            using var memoryStream = new MemoryStream(currentUserStream.GetData());
-            using var binaryReader = new BinaryReader(memoryStream);
+            using var binaryReader = new BinaryReader(currentUserStream);
             var verAndInstance = binaryReader.ReadUInt16();
             // ReSharper disable UnusedVariable
             // We need to read these fields to get to the correct location in the Current User stream
@@ -345,11 +359,19 @@ public class Checker
                     return false;
             }
         }
-        catch (CFCorruptedFileException cfCorruptedFileException)
+        catch (ArgumentNullException argumentNullException)
         {
-            throw new PPCFileIsCorrupt("The file stream is corrupt", cfCorruptedFileException);
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentNullException);
         }
-        catch (CFFileFormatException)
+        catch (ArgumentOutOfRangeException argumentOutOfRangeException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentOutOfRangeException);
+        }
+        catch (ArgumentException argumentException)
+        {
+            throw new PPCFileIsCorrupt("The file stream is corrupt", argumentException);
+        }
+        catch (Exception)
         {
             // It seems the file is just a normal Microsoft Office 2007 and up Open XML file
             return false;
@@ -472,7 +494,7 @@ public class Checker
                     {
                         switch (attachment)
                         {
-                            case Storage.Attachment attach when attach.Data == null:
+                            case Storage.Attachment { Data: null }:
                                 continue;
 
                             case Storage.Attachment attach:
