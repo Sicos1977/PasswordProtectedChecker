@@ -116,13 +116,10 @@ public class Checker
         {
             root = true;
             checkerResult = new Result();
-            checkerResult.AddParentFile(
-                !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+            checkerResult.AddParentFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
         }
         else
-        {
             checkerResult.AddChildFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
-        }
 
         switch (extension)
         {
@@ -174,8 +171,7 @@ public class Checker
                 if (!root)
                 {
                     var childCheckerResult = new Result {ParentResult = checkerResult};
-                    childCheckerResult.AddParentFile(
-                        !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                    childCheckerResult.AddParentFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
                     checkerResult = childCheckerResult;
                 }
                 
@@ -187,8 +183,7 @@ public class Checker
                 if (!root)
                 {
                     var childCheckerResult = new Result {ParentResult = checkerResult};
-                    childCheckerResult.AddParentFile(
-                        !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                    childCheckerResult.AddParentFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
                     checkerResult = childCheckerResult;
                 }
 
@@ -200,8 +195,7 @@ public class Checker
                 if (!root)
                 {
                     var childCheckerResult = new Result {ParentResult = checkerResult};
-                    childCheckerResult.AddParentFile(
-                        !string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
+                    childCheckerResult.AddParentFile(!string.IsNullOrEmpty(fileNameOrExtension) ? fileNameOrExtension : extension);
                     checkerResult = childCheckerResult;
                 }
                 
