@@ -218,7 +218,7 @@ public class Checker
     {
         try
         {
-            using var compoundFile = RootStorage.Open(fileStream);
+            using var compoundFile = RootStorage.Open(fileStream, StorageModeFlags.LeaveOpen);
             if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
 
             if (!compoundFile.TryOpenStream("WordDocument", out var wordDocumentStream))
@@ -268,7 +268,7 @@ public class Checker
     {
         try
         {
-            using var compoundFile = RootStorage.Open(fileStream);
+            using var compoundFile = RootStorage.Open(fileStream, StorageModeFlags.LeaveOpen);
             if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
 
             if(!compoundFile.TryOpenStream("WorkBook", out var workBookStream))
@@ -322,7 +322,7 @@ public class Checker
     {
         try
         {
-            using var compoundFile = RootStorage.Open(fileStream);
+            using var compoundFile = RootStorage.Open(fileStream, StorageModeFlags.LeaveOpen);
             if (compoundFile.TryOpenStream("EncryptedPackage", out _)) return true;
             if (!compoundFile.TryOpenStream("Current User", out var currentUserStream))
                 return false;
@@ -383,7 +383,7 @@ public class Checker
     {
         try
         {
-            var zipFile = new ZipFile(fileStream);
+            var zipFile = new ZipFile(fileStream, true);
 
             // Check if the file is password protected
             var manifestEntry = zipFile.FindEntry("META-INF/manifest.xml", true);
@@ -418,7 +418,7 @@ public class Checker
     {
         try
         {
-            using var zip = new ZipFile(fileStream);
+            using var zip = new ZipFile(fileStream, true);
             // First check the zip entries for passwords
             foreach (ZipEntry zipEntry in zip)
                 if (zipEntry.IsCrypted)
@@ -461,7 +461,7 @@ public class Checker
     {
         try
         {
-            using var message = new Storage.Message(fileStream);
+            using var message = new Storage.Message(fileStream, FileAccess.Read, true);
             switch (message.Type)
             {
                 case MessageType.Email:
@@ -536,7 +536,7 @@ public class Checker
     {
         try
         {
-            using var stream = fileStream;
+            var stream = fileStream;
             var message = Message.Load(stream);
             if (message.Attachments == null) 
                 return checkerResult;
