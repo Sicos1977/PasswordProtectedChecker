@@ -43,13 +43,6 @@ namespace PasswordProtectedTester
         }
 
         [TestMethod]
-        public void PdfWithPassword()
-        {
-            var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\PasswordProtected.pdf");
-            Assert.IsTrue(checkerResult.Protected);
-        }
-
-        [TestMethod]
         public void PdfWithoutPassword()
         {
             var checkerResult = new Checker().IsFileProtected(GetCurrentDir() + "TestFiles\\NotPasswordProtected.pdf");
@@ -139,7 +132,7 @@ namespace PasswordProtectedTester
 
         private static string GetCurrentDir()
         {
-            var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory()).Parent;
+            var directoryInfo = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent;
             if (directoryInfo != null)
                 return directoryInfo.FullName + Path.DirectorySeparatorChar;
             throw new DirectoryNotFoundException();

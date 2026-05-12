@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2018 - 2025 Kees van Spelde (www.magic-sessions.com)
+// Copyright (c) 2018 - 2026 Kees van Spelde (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@
 
 using System;
 using System.IO;
-using ICSharpCode.SharpZipLib.Zip;
+using System.IO.Compression;
 using MsgReader.Mime;
 using MsgReader.Outlook;
 using OpenMcdf;
@@ -375,33 +375,32 @@ public class Checker
 
     #region IsOpenDocumentFormatPasswordProtected
     /// <summary>
-    ///     Returns true when the <paramref name="fileStream" /> is password protected
+    /// Returns true when the <paramref name="fileStream" /> is password protected
     /// </summary>
     /// <param name="fileStream">A stream to the file</param>
     /// <exception cref="PPCFileIsCorrupt">Raised when the file stream is corrupt</exception>
-    private bool IsOpenDocumentFormatPasswordProtected(Stream fileStream)
+    private static bool IsOpenDocumentFormatPasswordProtected(Stream fileStream)
     {
         try
         {
-            var zipFile = new ZipFile(fileStream, true);
+            using var archive = new ZipArchive(fileStream, ZipArchiveMode.Read, leaveOpen: true);
+            var entry = archive.GetEntry("META-INF/manifest.xml");
+            if (entry == null) return false;
 
-            // Check if the file is password protected
-            var manifestEntry = zipFile.FindEntry("META-INF/manifest.xml", true);
-            if (manifestEntry == -1) return false;
-            using var manifestEntryStream = zipFile.GetInputStream(manifestEntry);
-            using var manifestEntryMemoryStream = new MemoryStream();
-            manifestEntryStream.CopyTo(manifestEntryMemoryStream);
-            manifestEntryMemoryStream.Position = 0;
-            using var streamReader = new StreamReader(manifestEntryMemoryStream);
-            var manifest = streamReader.ReadToEnd();
-            if (manifest.ToUpperInvariant().Contains("ENCRYPTION-DATA"))
-                return true;
-
-            return false;
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            var manifest = reader.ReadToEnd();
+                
+            return manifest.Contains("encryption-data", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (InvalidDataException exception)
+        {
+            // .NET gooit specifiek deze exception als het geen geldig zip-bestand is
+            throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
         }
         catch (Exception exception)
         {
-            throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
+            throw new PPCFileIsCorrupt("An error occurred while reading the file stream", exception);
         }
     }
     #endregion
@@ -418,33 +417,40 @@ public class Checker
     {
         try
         {
-            using var zip = new ZipFile(fileStream, true);
-            // First check the zip entries for passwords
-            foreach (ZipEntry zipEntry in zip)
-                if (zipEntry.IsCrypted)
+            using var archive = new ZipArchive(fileStream, ZipArchiveMode.Read, leaveOpen: true);
+            foreach (var entry in archive.Entries)
+            {
+                try
                 {
+                    using var entryStream = entry.Open();
+                    if (string.IsNullOrEmpty(entry.Name)) continue; // Sla mappen over
+
+                    using var memoryStream = new MemoryStream();
+                    entryStream.CopyTo(memoryStream);
+                    memoryStream.Position = 0;
+
+                    checkerResult = IsStreamProtected(memoryStream, entry.FullName, checkerResult);
+                    if (checkerResult.Protected) return checkerResult;
+                }
+                catch (InvalidDataException)
+                {
+                    // .NET gooit vaak deze exception als de header aangeeft dat er encryptie is
+                    // die de standaard ZipArchive niet ondersteunt (zoals wachtwoorden).
                     checkerResult.Protected = true;
-                    checkerResult.AddChildFile(zipEntry.Name);
+                    checkerResult.AddChildFile(entry.FullName);
                     return checkerResult;
                 }
-
-            foreach (ZipEntry zipEntry in zip)
-            {
-                if (!zipEntry.IsFile) continue;
-                using var zipStream = zip.GetInputStream(zipEntry);
-                using var memoryStream = new MemoryStream();
-                zipStream.CopyTo(memoryStream);
-                memoryStream.Position = 0;
-                checkerResult = IsStreamProtected(memoryStream, zipEntry.Name, checkerResult);
-                if (!checkerResult.Protected) continue;
-                return checkerResult;
             }
 
             return checkerResult;
         }
-        catch (Exception exception)
+        catch (InvalidDataException ex)
         {
-            throw new PPCFileIsCorrupt("The file stream is corrupt", exception);
+            throw new PPCFileIsCorrupt("The file stream is corrupt or not a valid zip", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new PPCFileIsCorrupt("An unexpected error occurred", ex);
         }
     }
     #endregion

@@ -3,6 +3,9 @@ using System.IO;
 
 namespace PasswordProtectedChecker.Helpers;
 
+/// <summary>
+///    Helper class for file related operations
+/// </summary>
 internal static class FileManager
 {
     #region Consts
@@ -87,8 +90,7 @@ internal static class FileManager
             maxFileNameLength -= extraTruncateSize;
 
         if (maxFileNameLength < 1)
-            throw new PathTooLongException("Unable the truncate the fileName '" + fileName + "', current size '" +
-                                           fileName.Length + "'");
+            throw new PathTooLongException($"Unable the truncate the fileName '{fileName}', current size '{fileName.Length}'");
 
         return path + fileNameWithoutExtension.Substring(0, maxFileNameLength) + extension;
     }
@@ -106,8 +108,8 @@ internal static class FileManager
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("path");
 
-        var splittedPath = path.Split(Path.DirectorySeparatorChar);
-        var fileName = splittedPath[splittedPath.Length - 1];
+        var pathParts = path.Split(Path.DirectorySeparatorChar);
+        var fileName = pathParts[pathParts.Length - 1];
 
         var index = fileName.LastIndexOf(".", StringComparison.Ordinal);
 
@@ -127,10 +129,10 @@ internal static class FileManager
     public static string GetFileNameWithoutExtension(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
-            throw new ArgumentException(@"No path given", nameof(path));
+            throw new ArgumentException("No path given", nameof(path));
 
-        var splittedPath = path.Split(Path.DirectorySeparatorChar);
-        var fileName = splittedPath[splittedPath.Length - 1];
+        var pathParts = path.Split(Path.DirectorySeparatorChar);
+        var fileName = pathParts[pathParts.Length - 1];
         return !fileName.Contains(".")
             ? fileName
             : fileName.Substring(0, fileName.LastIndexOf(".", StringComparison.Ordinal));
@@ -151,52 +153,17 @@ internal static class FileManager
         //GetDirectoryName('C:\MyDir') returns 'C:\'
         //GetDirectoryName('C:\') returns ''
 
-        var splittedPath = path.Split(Path.DirectorySeparatorChar);
+        var pathParts = path.Split(Path.DirectorySeparatorChar);
 
-        if (splittedPath.Length <= 1)
+        if (pathParts.Length <= 1)
             return string.Empty;
 
-        var result = splittedPath[0];
+        var result = pathParts[0];
 
-        for (var i = 1; i < splittedPath.Length - 1; i++)
-            result += Path.DirectorySeparatorChar + splittedPath[i];
+        for (var i = 1; i < pathParts.Length - 1; i++)
+            result += Path.DirectorySeparatorChar + pathParts[i];
 
         return result;
-    }
-    #endregion
-
-    #region FileExistsMakeNew
-    /// <summary>
-    ///     Checks if a file already exists and if so adds a number until the file is unique
-    /// </summary>
-    /// <param name="fileName">The file to check</param>
-    /// <param name="validateLongFileName">When true validation will be performed on the max path lengt</param>
-    /// <param name="extraTruncateSize"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException">
-    ///     Raised when no path or file name is given in the <paramref name="fileName" />
-    /// </exception>
-    /// <exception cref="PathTooLongException">
-    ///     Raised when it is not possible to truncate the <paramref name="fileName" />
-    /// </exception>
-    public static string FileExistsMakeNew(string fileName, bool validateLongFileName = true,
-        int extraTruncateSize = -1)
-    {
-        var extension = GetExtension(fileName);
-        var path = CheckForBackSlash(GetDirectoryName(fileName));
-
-        var tempFileName = validateLongFileName ? ValidateLongFileName(fileName, extraTruncateSize) : fileName;
-
-        var i = 2;
-        while (File.Exists(tempFileName))
-        {
-            tempFileName = validateLongFileName ? ValidateLongFileName(tempFileName, extraTruncateSize) : tempFileName;
-            var fileNameWithoutExtension = GetFileNameWithoutExtension(tempFileName);
-            tempFileName = path + fileNameWithoutExtension + "_" + i + extension;
-            i += 1;
-        }
-
-        return tempFileName;
     }
     #endregion
 }
